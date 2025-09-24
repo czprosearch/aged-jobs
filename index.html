@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>30+ Day Open Roles</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Arial;margin:20px;max-width:900px}
+    header{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+    input,select{padding:8px;border:1px solid #ddd;border-radius:8px}
+    .card{border:1px solid #eee;border-radius:12px;padding:12px;margin:10px 0}
+    .meta{color:#666;font-size:0.9em}
+    footer{margin-top:24px;color:#666;font-size:0.9em}
+  </style>
+</head>
+<body>
+  <h1>Roles Open &gt; 30 Days</h1>
+  <header>
+    <input id="q" placeholder="Search title/company…" />
+    <input id="loc" placeholder="Filter by location…" />
+    <label><input type="checkbox" id="noRecruiters" checked> Exclude recruiting firms</label>
+  </header>
+  <div id="list">Loading…</div>
+  <footer>
+    <p>Data updated by GitHub Actions. Sources: Greenhouse & Lever public job feeds.</p>
+  </footer>
+
+  <script>
+    async function load() {
+      const data = await fetch('jobs_30plus.json', {cache: 'no-store'}).then(r=>r.json()).catch(()=>[]);
+      const q = document.getElementById('q');
+      const loc = document.getElementById('loc');
+      const noRec = document.getElementById('noRecruiters');
+      const list = document.getElementById('list');
+
+      function render() {
+        const query = q.value.trim().toLowerCase();
+        const city = loc.value.trim().toLowerCase();
+        const hideRec = noRec.checked;
+
+        const filtered = data.filter(j => {
+          const company = (j.company||'').toLowerCase();
+          const title = (j.title||'').toLowerCase();
+          const location = (j.location||'').toLowerCase();
+          if (hideRec && company.match(/recruit|staff(ing)?|talent\s+agency/)) return false;
+          if (query && !(company.includes(query) || title.includes(query))) return false;
+          if (city && !location.includes(city)) return false;
+          return true;
+        });
+
+        list.innerHTML = filtered.map(j => `
+          <div class="card">
+            <div><strong>${j.title||'Untitled'}</strong></div>
+            <div class="meta">
+              ${j.company||'Unknown'} • ${j.location||'Location N/A'}
+              • <a href="${j.url}" target="_blank" rel="noopener">Apply</a>
+            </div>
+            <div class="meta">Posted: ${j.postedAt ? new Date(j.postedAt).toDateString() : 'N/A'} (${j.source})</div>
+          </div>
+        `).join('') || '<p>No results.</p>';
+      }
+
+      [q, loc, noRec].forEach(el => el.addEventListener('input', render));
+      render();
+    }
+    load();
+  </script>
+</body>
+</html>
